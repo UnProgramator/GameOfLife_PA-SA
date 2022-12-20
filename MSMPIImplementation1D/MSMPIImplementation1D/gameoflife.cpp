@@ -213,9 +213,7 @@ static void communicateWithPears() {
             bufT1X[x - 1] = board[sizeX + x];
 
         MPI_Isend(bufT1X, sizeX - 2, MPI_CHAR, peers[0], 0, MPI_COMM_WORLD, &req[0]);
-        MPI_Recv(bufX, sizeX - 2, MPI_CHAR, peers[0], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
-        for (int x = 1; x < sizeX - 1; x++)
-            board[x] = bufX[x - 1];
+        
     }
 
     if (peers[1] != -1) { //up padding, send row y-2 and receive row y-1
@@ -225,9 +223,19 @@ static void communicateWithPears() {
             bufT2X[x - 1] = board[(sizeY - 2) * sizeX + x];
 
         MPI_Isend(bufT2X, sizeX - 2, MPI_CHAR, peers[1], 0, MPI_COMM_WORLD, &req[1]);
+       
+    }
+
+    if (peers[0] != -1) {
+        MPI_Recv(bufX, sizeX - 2, MPI_CHAR, peers[0], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+        for (int x = 1; x < sizeX - 1; x++)
+            board[x] = bufX[x - 1];
+    }
+
+    if (peers[1] != -1) {
         MPI_Recv(bufX, sizeX - 2, MPI_CHAR, peers[1], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
         for (int x = 1; x < sizeX - 1; x++)
-            board[(sizeY-1)*sizeX + x] = bufX[x - 1];
+            board[(sizeY - 1) * sizeX + x] = bufX[x - 1];
     }
 
     call = 1;

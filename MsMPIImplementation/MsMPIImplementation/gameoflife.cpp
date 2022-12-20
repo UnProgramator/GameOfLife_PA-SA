@@ -274,9 +274,12 @@ void retDisplay() {
 static void communicateWithPears() {
     MPI_Status stat;
     static MPI_Request req[8];
-    static int corners[8];
+    static int corners[4];
+    static int corner_rec;
     static int call = 0;
     MPI_Status s;
+
+    //send
 
     //read up peer
     if (peers[1] != -1) { //up padding, row 0
@@ -285,9 +288,6 @@ static void communicateWithPears() {
             bufT1X[x - 1] = board[sizeX + x];
 
         MPI_Isend(bufT1X, sizeX - 2, MPI_CHAR, peers[1], 0, MPI_COMM_WORLD, &req[1]);
-        MPI_Recv(bufX, sizeX - 2, MPI_CHAR, peers[1], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
-        for (int x = 1; x < sizeX - 1; x++)
-            board[x] = bufX[x - 1];
     }
 
     //read down peer
@@ -297,9 +297,6 @@ static void communicateWithPears() {
             bufT2X[x - 1] = board[(sizeY - 2) * sizeX + x];
 
         MPI_Isend(bufT2X, sizeX - 2, MPI_CHAR, peers[3], 0, MPI_COMM_WORLD, &req[3]);
-        MPI_Recv(bufX, sizeX - 2, MPI_CHAR, peers[3], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
-        for (int x = 1; x < sizeX - 1; x++)
-            board[(sizeY - 1) * sizeX + x] = bufX[x - 1];
     }
 
     //read left peer
@@ -309,9 +306,6 @@ static void communicateWithPears() {
             bufT1Y[y - 1] = board[y * sizeX + 1];
 
         MPI_Isend(bufT1Y, sizeY - 2, MPI_CHAR, peers[2], 0, MPI_COMM_WORLD, &req[2]);
-        MPI_Recv(bufY, sizeY - 2, MPI_CHAR, peers[2], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
-        for (int y = 1; y < sizeY - 1; y++)
-            board[y * sizeX] = bufY[y - 1];
     }
 
     //read right peer
@@ -321,42 +315,77 @@ static void communicateWithPears() {
             bufT2Y[y - 1] = board[y * sizeX + (sizeX - 2)];
 
         MPI_Isend(bufT2Y, sizeY - 2, MPI_CHAR, peers[0], 0, MPI_COMM_WORLD, &req[0]);
-        MPI_Recv(bufY, sizeY - 2, MPI_CHAR, peers[0], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
-        for (int y = 1; y < sizeY - 1; y++)
-            board[y * sizeX + (sizeX - 1)] = bufY[y - 1];
     }
 
     //call corners
     if (peers[4] != -1) {
         if (call) MPI_Wait(&req[4], &s);
-        corners[4] = board[sizeX + (sizeX - 2)];
-        MPI_Isend(&corners[4], 1, MPI_CHAR, peers[4], 0, MPI_COMM_WORLD, &req[4]);
-        MPI_Recv(&corners[4 - 4], 1, MPI_CHAR, peers[4], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
-        board[0 + (sizeX - 1)] = corners[4 - 4];
+        corners[4-4] = board[sizeX + (sizeX - 2)];
+        MPI_Isend(&corners[4 - 4], 1, MPI_CHAR, peers[4], 0, MPI_COMM_WORLD, &req[4]);
     }
 
     if (peers[5] != -1) {
         if (call) MPI_Wait(&req[5], &s);
-        corners[5] = board[sizeX + 1];
-        MPI_Isend(&corners[5], 1, MPI_CHAR, peers[5], 0, MPI_COMM_WORLD, &req[5]);
-        MPI_Recv(&corners[5 - 4], 1, MPI_CHAR, peers[5], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
-        board[0 + 0] = corners[5 - 4];
+        corners[5 - 4] = board[sizeX + 1];
+        MPI_Isend(&corners[5 - 4], 1, MPI_CHAR, peers[5], 0, MPI_COMM_WORLD, &req[5]);
     }
 
     if (peers[6] != -1) {
         if (call) MPI_Wait(&req[6], &s);
-        corners[6] = board[(sizeY - 2) * sizeX + 1];
-        MPI_Isend(&corners[6], 1, MPI_CHAR, peers[6], 0, MPI_COMM_WORLD, &req[6]);
-        MPI_Recv(&corners[6 - 4], 1, MPI_CHAR, peers[6], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
-        board[(sizeY - 1) * sizeX + 0] = corners[6 - 4];
+        corners[6 - 4] = board[(sizeY - 2) * sizeX + 1];
+        MPI_Isend(&corners[6 - 4], 1, MPI_CHAR, peers[6], 0, MPI_COMM_WORLD, &req[6]);
     }
 
     if (peers[7] != -1) {
         if (call) MPI_Wait(&req[7], &s);
-        corners[7] = board[(sizeY - 2) * sizeX + sizeX - 2];
-        MPI_Isend(&corners[7], 1, MPI_CHAR, peers[7], 0, MPI_COMM_WORLD, &req[7]);
-        MPI_Recv(&corners[7 - 4], 1, MPI_CHAR, peers[7], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
-        board[(sizeY - 1) * sizeX + sizeX - 1] = corners[7 - 4];
+        corners[7 - 4] = board[(sizeY - 2) * sizeX + sizeX - 2];
+        MPI_Isend(&corners[7 - 4], 1, MPI_CHAR, peers[7], 0, MPI_COMM_WORLD, &req[7]);
+    }
+
+    //receive
+
+    if (peers[1] != -1) {
+        MPI_Recv(bufX, sizeX - 2, MPI_CHAR, peers[1], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+        for (int x = 1; x < sizeX - 1; x++)
+            board[x] = bufX[x - 1];
+    }
+
+    if (peers[3] != -1) {
+        MPI_Recv(bufX, sizeX - 2, MPI_CHAR, peers[3], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+        for (int x = 1; x < sizeX - 1; x++)
+            board[(sizeY - 1) * sizeX + x] = bufX[x - 1];
+    }
+
+    if (peers[2] != -1) {
+        MPI_Recv(bufY, sizeY - 2, MPI_CHAR, peers[2], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+        for (int y = 1; y < sizeY - 1; y++)
+            board[y * sizeX] = bufY[y - 1];
+    }
+
+    if (peers[0] != -1) {
+        MPI_Recv(bufY, sizeY - 2, MPI_CHAR, peers[0], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+        for (int y = 1; y < sizeY - 1; y++)
+            board[y * sizeX + (sizeX - 1)] = bufY[y - 1];
+    }
+
+    if (peers[4] != -1) {
+        MPI_Recv(&corner_rec, 1, MPI_CHAR, peers[4], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+        board[0 + (sizeX - 1)] = corner_rec;
+    }
+
+    if (peers[5] != -1) {
+        MPI_Recv(&corner_rec, 1, MPI_CHAR, peers[5], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+        board[0 + 0] = corner_rec;
+    }
+
+    if (peers[6] != -1) {
+        MPI_Recv(&corner_rec, 1, MPI_CHAR, peers[6], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+        board[(sizeY - 1) * sizeX + 0] = corner_rec;
+    }
+
+    if (peers[7] != -1) {
+        MPI_Recv(&corner_rec, 1, MPI_CHAR, peers[7], MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+        board[(sizeY - 1) * sizeX + sizeX - 1] = corner_rec;
     }
 
     call = 1;

@@ -78,11 +78,14 @@ int main(int argc, char** argv) {
     fflush(stdout);
 
     if (my_rank == 0) {//the main one
+        double time, time2, timef;
         char board[boardy][boardx];
         memset(board, 0, boardy * boardx * sizeof(board[0][0]));
         simple_board(board);
         simple_board(board, boardy/2 - 4, -1);
         simple_board(board, 10, 20);
+
+        time = MPI_Wtime();
 
         if (use_display) {
             std::cout << "---------------------------------------------\n";
@@ -113,6 +116,8 @@ int main(int argc, char** argv) {
             std::cout.flush();
         }
 
+        time2 = MPI_Wtime();
+
         for (int i = 0; i < 100; i++) {
             step(false);
 
@@ -132,6 +137,9 @@ int main(int argc, char** argv) {
                 Sleep(1000);
             }
         }
+
+        timef = MPI_Wtime();
+        printf("---------!!!!!!!!!!!!!!!---------- the time %lf seconds, with init was %lf seconds", timef - time2, timef - time);
     }
     else {
         proc_init();

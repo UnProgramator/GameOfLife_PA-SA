@@ -7,26 +7,27 @@
 
 #include "gameoflife.h"
 
-#define use_display true
+#define use_display false
 
 #if use_display == true
 
 #define boardx_actual 80
 #define boardy_actual 80
 
+#define generations 100
+
 #else
 
 #define boardx_actual 80
-#define boardy_actual 48
+#define boardy_actual 80
+
+#define generations 100000
 
 #endif
 
 #define boardx (boardx_actual + 2)
 #define boardy (boardy_actual + 2)
 
-
-
-#define generations 100000
 
 #define initTimmer(t) t = omp_get_wtime()
 #define computeTimmer(t) t = omp_get_wtime() - t
@@ -75,6 +76,7 @@ int main(int argc, char** argv) {
     fflush(stdout);
 
     if (my_rank == 0) {//the main one
+        double time,time2,timef;
         char board[boardy][boardx];
         memset(board, 0, boardy * boardx * sizeof(board[0][0]));
         simple_board(board);
@@ -82,6 +84,8 @@ int main(int argc, char** argv) {
         simple_board(board,40, 50);
         simple_board(board,43, 40);
         simple_board(board,-4, 3);
+
+        time = MPI_Wtime();
 
         master_proc_init((char*)board);
 
@@ -100,7 +104,9 @@ int main(int argc, char** argv) {
             Sleep(1000);
         }
 
-        for (int i = 0; i < 100; i++) {
+        time2 = MPI_Wtime();
+
+        for (int i = 0; i < generations; i++) {
             step(false);
 
             if (use_display) {
@@ -119,6 +125,9 @@ int main(int argc, char** argv) {
                 Sleep(1000);
             }
         }
+
+        timef = MPI_Wtime();
+        printf("---------!!!!!!!!!!!!!!!---------- the time %lf seconds, with init was %lf seconds", timef - time2, timef-time);
     }
     else {
         proc_init();
@@ -126,7 +135,7 @@ int main(int argc, char** argv) {
         if (use_display)
             retDisplay();
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < generations; i++)
             step(use_display);
     }
 
