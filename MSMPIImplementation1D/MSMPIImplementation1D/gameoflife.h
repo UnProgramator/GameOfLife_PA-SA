@@ -11,4 +11,4 @@ extern void step(bool displayOn); //call with false in master, and use use_displ
 
 extern void get_display_board(char* boardtd); //call in master if you want to display
 
-extern void retDisplay();
+extern void retDisplay(); // return the matrix to the main process to be displayed

@@ -19,10 +19,10 @@ static size_t board_size;
  * 6 3 7
  */
 
-void init_gof(int x, int y, int no_proc, int procID) {
+void init_gof(int x, int y, int no_proc, int procID) { // init game of life. called by everione
     procSqrt = (int)sqrt(no_proc);
 
-    if (!procID && (procSqrt * procSqrt != no_proc || x % no_proc != 0 || y % no_proc != 0)) { // in master process, we verify the values
+    if (procID == 0 && (procSqrt * procSqrt != no_proc || x % procSqrt != 0 || y % procSqrt != 0)) { // in master process, we verify the values
         throw std::exception("invalid dimensions");
     }
     this_id = procID;
@@ -100,7 +100,7 @@ static void set_board(char* value) {
         for (int x = 1; x < sizeX - 1; x++)
             board[y * sizeX + x] = value[i++];
 
-    /*char* c = new char[board_size +1];
+    /*char* c = new char[board_size +1]; // debug "print on screen"
     i = 0;
     for (int y = 0; y < sizeY; y++) {
         for (int x = 0; x < sizeX; x++)
@@ -113,7 +113,7 @@ static void set_board(char* value) {
     delete[] c;*/
 }
 
-static char compute(int y, int x) {
+static char compute(int y, int x) { // compute neighboars of a cell
     unsigned sum =
             ( board[(y - 1) * sizeX + (x - 1)]
             + board[(y - 1) * sizeX + x]
@@ -126,9 +126,7 @@ static char compute(int y, int x) {
     return (board[y * sizeX + x] == 1 && sum == 2) || sum == 3;
 }
 
-
-
-static inline void compute_generation() {
+static inline void compute_generation() { // set dead/aliva cells for the matrix, for one generation
     for (int y = 1; y < sizeY - 1; y++)
         for (int x = 1; x < sizeX - 1; x++) {
             temp[y * sizeX + x] = compute(y, x);
@@ -137,7 +135,7 @@ static inline void compute_generation() {
 
 static void communicateWithPears();
 
-void step(bool displayOn) {
+void step(bool displayOn) { // a step in game of life
     memcpy(temp, board, board_size);
     communicateWithPears();
     compute_generation();
@@ -148,7 +146,7 @@ void step(bool displayOn) {
 
 #define read_tag 192
 
-void proc_init() {
+void proc_init() { //init non-master processes
     const int buffsize = (sizeY - 2) * (sizeX - 2);
     char* buffer = new char[buffsize];
     memset(buffer, 0, buffsize);
@@ -162,7 +160,7 @@ void proc_init() {
     delete[] buffer;
 }
 
-void master_proc_init(char* boardt, int sX, int sY) {
+void master_proc_init(char* boardt, int sX, int sY) { // init the master process. set the board slice and transmite slices to peers
     char** buffer = new char* [no_proc];
 
     /* (p%n) * (boardActualX/n) to determin the offset of the column. 
@@ -223,7 +221,7 @@ void master_proc_init(char* boardt, int sX, int sY) {
     delete[] buffer;
 }
 
-void get_display_board(char* boardtd) {
+void get_display_board(char* boardtd) { // called in master in order to get the board from peers for display
     static char* buffer = nullptr;
     const int buffsize = (sizeY - 2) * (sizeX - 2);
     if (buffer == nullptr) {
@@ -256,7 +254,7 @@ void get_display_board(char* boardtd) {
             boardtd[y * masterX + x] = board[y * sizeX + x];
 }
 
-void retDisplay() {
+void retDisplay() { // called in non-master processes in order to return the matrix for display
     static int buffsize = (sizeY - 2) * (sizeX - 2);
     static char* buf = new char[buffsize];
 
@@ -271,7 +269,7 @@ void retDisplay() {
 }
 
 
-static void communicateWithPears() {
+static void communicateWithPears() { // send and get matrix information with peers
     MPI_Status stat;
     static MPI_Request req[8];
     static int corners[4];
